@@ -123,7 +123,7 @@ case $OPTION in
 		echo "   2) Mainline $NGINX_MAINLINE_VER"
 		echo ""
 		while [[ $NGINX_VER != "1" && $NGINX_VER != "2" && $NGINX_VER != "STABLE" && $NGINX_VER != "MAINLINE" ]]; do
-			read -rp "Select an option [1-2]: " -e -i 1 NGINX_VER
+			read -rp "Select an option [1-2]: " -e -i 2 NGINX_VER
 		done
 	fi
 	case $NGINX_VER in
@@ -157,7 +157,7 @@ case $OPTION in
 			read -rp "       PageSpeed $NPS_VER [y/n]: " -e -i n PAGESPEED
 		done
 		while [[ $BROTLI != "y" && $BROTLI != "n" ]]; do
-			read -rp "       Brotli [y/n]: " -e -i n BROTLI
+			read -rp "       Brotli [y/n]: " -e -i y BROTLI
 		done
 		while [[ $HEADERMOD != "y" && $HEADERMOD != "n" ]]; do
 			read -rp "       Headers More $HEADERMOD_VER [y/n]: " -e -i n HEADERMOD
@@ -169,7 +169,7 @@ case $OPTION in
 			read -rp "       Fancy index [y/n]: " -e -i n FANCYINDEX
 		done
 		while [[ $CACHEPURGE != "y" && $CACHEPURGE != "n" ]]; do
-			read -rp "       ngx_cache_purge [y/n]: " -e -i n CACHEPURGE
+			read -rp "       ngx_cache_purge [y/n]: " -e -i y CACHEPURGE
 		done
 		while [[ $SUBFILTER != "y" && $SUBFILTER != "n" ]]; do
 			read -rp "       nginx_substitutions_filter [y/n]: " -e -i n SUBFILTER
