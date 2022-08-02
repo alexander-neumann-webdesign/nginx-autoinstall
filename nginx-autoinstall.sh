@@ -39,8 +39,7 @@ NGINX_OPTIONS=${NGINX_OPTIONS:-"
 	--with-cc-opt=-Wno-deprecated-declarations \
 	--with-cc-opt=-Wno-ignored-qualifiers"}
 # Define modules
-NGINX_MODULES=${NGINX_MODULES:-"--with-http_v2_hpack_enc \
-	--with-threads \
+NGINX_MODULES=${NGINX_MODULES:-"--with-threads \
 	--with-file-aio \
 	--with-http_ssl_module \
 	--with-http_v2_module \
