@@ -364,7 +364,7 @@ case $OPTION in
 	# Cache Purge
 	if [[ $CACHEPURGE == 'y' ]]; then
 		cd /usr/local/src/nginx/modules || exit 1
-		git clone --depth 1 https://github.com/FRiCKLE/ngx_cache_purge
+		git clone --depth 1 https://github.com/nginx-modules/ngx_cache_purge
 	fi
 
 	# Nginx Substitutions Filter
