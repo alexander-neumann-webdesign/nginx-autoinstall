@@ -63,7 +63,7 @@ NGINX_MODULES=${NGINX_MODULES:-"--with-http_v2_hpack_enc \
 if [[ $HEADLESS == "y" ]]; then
 	# Define options
 	OPTION=${OPTION:-1}
-	NGINX_VER=${NGINX_VER:-1}
+	NGINX_VER=${NGINX_VER:-2}
 	PAGESPEED=${PAGESPEED:-n}
 	BROTLI=${BROTLI:-y}
 	HEADERMOD=${HEADERMOD:-n}
