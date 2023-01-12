@@ -7,7 +7,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # Define versions
-NGINX_MAINLINE_VER=${NGINX_MAINLINE_VER:-1.23.2}
+NGINX_MAINLINE_VER=${NGINX_MAINLINE_VER:-1.23.3}
 NGINX_STABLE_VER=${NGINX_STABLE_VER:-1.22.0}
 LIBRESSL_VER=${LIBRESSL_VER:-3.3.1}
 OPENSSL_VER=${OPENSSL_VER:-1.1.1l}
@@ -86,8 +86,8 @@ if [[ $HEADLESS == "y" ]]; then
 	NGXECHO=${NGXECHO:-n}
 	HPACK=${HPACK:-n}
 	SSL=${SSL:-1}
-	RM_CONF=${RM_CONF:-y}
-	RM_LOGS=${RM_LOGS:-y}
+	RM_CONF=${RM_CONF:-n}
+	RM_LOGS=${RM_LOGS:-n}
 fi
 
 # Clean screen before launching menu
@@ -289,7 +289,6 @@ case $OPTION in
 		cd /usr/local/src/nginx/modules || exit 1
 		git clone https://github.com/google/ngx_brotli
 		cd ngx_brotli || exit 1
-		git checkout v1.0.0rc
 		git submodule update --init
 	fi
 
