@@ -493,7 +493,7 @@ case $OPTION in
 	if [[ ! -e /etc/nginx/nginx.conf ]]; then
 		mkdir -p /etc/nginx
 		cd /etc/nginx || exit 1
-		wget https://raw.githubusercontent.com/Angristan/nginx-autoinstall/master/conf/nginx.conf
+		wget https://raw.githubusercontent.com/alexander-neumann-webdesign/nginx-autoinstall/master/conf/nginx.conf
 	fi
 	cd /usr/local/src/nginx/nginx-${NGINX_VER} || exit 1
 
@@ -734,14 +734,14 @@ case $OPTION in
 	# Using the official systemd script and logrotate conf from nginx.org
 	if [[ ! -e /lib/systemd/system/nginx.service ]]; then
 		cd /lib/systemd/system/ || exit 1
-		wget https://raw.githubusercontent.com/Angristan/nginx-autoinstall/master/conf/nginx.service
+		wget https://raw.githubusercontent.com/alexander-neumann-webdesign/nginx-autoinstall/master/conf/nginx.service
 		# Enable nginx start at boot
 		systemctl enable nginx
 	fi
 
 	if [[ ! -e /etc/logrotate.d/nginx ]]; then
 		cd /etc/logrotate.d/ || exit 1
-		wget https://raw.githubusercontent.com/Angristan/nginx-autoinstall/master/conf/nginx-logrotate -O nginx
+		wget https://raw.githubusercontent.com/alexander-neumann-webdesign/nginx-autoinstall/master/conf/nginx-logrotate -O nginx
 	fi
 
 	# Nginx's cache directory is not created by default
@@ -825,7 +825,7 @@ case $OPTION in
 	exit
 	;;
 3) # Update the script
-	wget https://raw.githubusercontent.com/Angristan/nginx-autoinstall/master/nginx-autoinstall.sh -O nginx-autoinstall.sh
+	wget https://raw.githubusercontent.com/alexander-neumann-webdesign/nginx-autoinstall/master/nginx-autoinstall.sh -O nginx-autoinstall.sh
 	chmod +x nginx-autoinstall.sh
 	echo ""
 	echo "Update done."
