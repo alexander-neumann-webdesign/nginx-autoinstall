@@ -75,8 +75,8 @@ if [[ $BROTLI == 'y' ]]; then
 	cd /usr/local/src/nginx/modules || exit 1
 	git clone --recurse-submodules -j8 https://github.com/google/ngx_brotli
 	
-	mkdir /usr/local/src/nginx/modules/ngx_brotli/deps/brotli/out
-	cd /usr/local/src/nginx/modules/ngx_brotli/deps/brotli/out
+	mkdir ngx_brotli/deps/brotli/out
+	cd ngx_brotli/deps/brotli/out
 	
 	cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS="-Ofast -m64 -march=native -mtune=native -flto -funroll-loops -ffunction-sections -fdata-sections -Wl,--gc-sections" -DCMAKE_CXX_FLAGS="-Ofast -m64 -march=native -mtune=native -flto -funroll-loops -ffunction-sections -fdata-sections -Wl,--gc-sections" -DCMAKE_INSTALL_PREFIX=./installed ..
 	cmake --build . --config Release --target brotlienc
@@ -162,6 +162,14 @@ systemctl restart nginx
 if [[ $(lsb_release -si) == "Debian" ]] || [[ $(lsb_release -si) == "Ubuntu" ]]; then
 	cd /etc/apt/preferences.d/ || exit 1
 	echo -e 'Package: nginx*\nPin: release *\nPin-Priority: -1' >nginx-block
+fi
+
+# Resolve apt dependencies
+if [[ $(lsb_release -si) == "Debian" ]] || [[ $(lsb_release -si) == "Ubuntu" ]]; then
+	apt-get install equivs
+	cd /usr/local/src/nginx/
+	mkdir equivs && cd equivs
+	echo -e 'Section: misc\nPriority: optional\nStandards-Version: 3.9.2\n\nPackage: nginx\nVersion: ${NGINX_VER}\nMaintainer: alexanderneumann\nArchitecture: all\nDescription: Fake package for nginx to avoid dependencies' > nginx-dummy.ctl
 fi
 
 # We're done !
