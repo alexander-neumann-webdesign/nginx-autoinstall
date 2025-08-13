@@ -950,6 +950,7 @@ EOF
     
     log INFO "System optimizations applied"
 }
+show_final_info(){
     local nginx_version
     nginx_version=$(/usr/sbin/nginx -v 2>&1 | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+')
     
