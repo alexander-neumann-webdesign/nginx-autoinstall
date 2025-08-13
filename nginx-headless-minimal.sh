@@ -8,7 +8,7 @@ fi
 
 # Define versions
 NGINX_STABLE_VER=${NGINX_STABLE_VER:-1.28.0}
-NGINX_MAINLINE_VER=${NGINX_MAINLINE_VER:-1.29.0}
+NGINX_MAINLINE_VER=${NGINX_MAINLINE_VER:-1.29.1}
 
 # Choose between NGINX_STABLE_VER and NGINX_MAINLINE_VER
 NGINX_VER=$NGINX_MAINLINE_VER
@@ -63,7 +63,7 @@ mkdir -p /usr/local/src/nginx/modules
 
 # Dependencies
 apt-get update
-apt-get install -y build-essential ca-certificates wget curl libpcre3 libpcre3-dev autoconf unzip automake libtool tar git libssl-dev zlib1g-dev uuid-dev lsb-release libxml2-dev libxslt1-dev cmake equivs
+apt-get install -y build-essential ca-certificates wget curl libpcre3 libpcre3-dev autoconf unzip automake libtool tar git libssl-dev libgd-dev zlib1g-dev uuid-dev lsb-release libxml2-dev libxslt1-dev cmake equivs
 
 #Brotli
 if [[ $BROTLI == 'y' ]]; then
@@ -124,7 +124,7 @@ cd nginx-${NGINX_VER} || exit 1
 if [[ ! -e /etc/nginx/nginx.conf ]]; then
 	mkdir -p /etc/nginx
 	cd /etc/nginx || exit 1
-	wget https://raw.githubusercontent.com/alexander-neumann-webdesignnginx-autoinstall/master/conf/nginx.conf
+	wget https://raw.githubusercontent.com/alexander-neumann-webdesign/nginx-autoinstall/master/conf/nginx.conf
 fi
 
 # add nginx user
