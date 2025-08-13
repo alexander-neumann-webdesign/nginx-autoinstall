@@ -1,6 +1,7 @@
 #!/bin/bash
 # NGINX Autoinstall Script - Improved Version
 # Usage: chmod +x ./nginx-modern-autoinstall.sh && ./nginx-modern-autoinstall.sh
+# or: wget -O - https://raw.githubusercontent.com/alexander-neumann-webdesign/nginx-autoinstall/refs/heads/master/nginx-modern-autoinstall.sh | bash
 
 set -euo pipefail  # Exit on error, undefined vars, pipe failures
 IFS=$'\n\t'        # Secure IFS
@@ -797,6 +798,7 @@ EOF
         log INFO "Default site configuration created"
     fi
 }
+setup_logrotate(){
     if [[ ! -f /etc/logrotate.d/nginx ]]; then
         log INFO "Setting up log rotation..."
         
