@@ -1,5 +1,5 @@
 #!/bin/bash
-# NGINX Autoinstall Script - Improved Version
+# NGINX Autoinstall Script v0.5
 # Usage: chmod +x ./nginx-modern-autoinstall.sh && ./nginx-modern-autoinstall.sh
 # or: wget -O - https://raw.githubusercontent.com/alexander-neumann-webdesign/nginx-autoinstall/refs/heads/master/nginx-modern-autoinstall.sh | bash
 
@@ -74,40 +74,6 @@ detect_os() {
     esac
 }
 
-# Configuration with validation
-readonly NGINX_STABLE_VER=${NGINX_STABLE_VER:-1.28.0}
-readonly NGINX_MAINLINE_VER=${NGINX_MAINLINE_VER:-1.29.1}
-readonly NGINX_VER=${NGINX_VER:-$NGINX_MAINLINE_VER}
-readonly NGINX_USER=${NGINX_USER:-nginx}
-readonly NGINX_GROUP=${NGINX_GROUP:-nginx}
-readonly BROTLI=${BROTLI:-y}
-readonly ZSTD=${ZSTD:-y}
-readonly CACHEPURGE=${CACHEPURGE:-y}
-readonly BUILD_THREADS=${BUILD_THREADS:-$(nproc)}
-readonly PERFORMANCE_OPTIMIZED=${PERFORMANCE_OPTIMIZED:-y}
-
-# Validate version format
-if [[ ! $NGINX_VER =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    error_exit "Invalid NGINX version format: $NGINX_VER"
-fi
-
-log INFO "Building NGINX version: $NGINX_VER"
-log INFO "NGINX will run as user: $NGINX_USER, group: $NGINX_GROUP"
-
-# Validate user and group names
-if [[ ! $NGINX_USER =~ ^[a-zA-Z_][a-zA-Z0-9_-]{0,31}$ ]]; then
-    error_exit "Invalid NGINX user name: $NGINX_USER"
-fi
-
-if [[ ! $NGINX_GROUP =~ ^[a-zA-Z_][a-zA-Z0-9_-]{0,31}$ ]]; then
-    error_exit "Invalid NGINX group name: $NGINX_GROUP"
-fi
-
-# Define paths
-readonly NGINX_SOURCE_DIR="/usr/local/src/nginx"
-readonly NGINX_BUILD_DIR="${NGINX_SOURCE_DIR}/nginx-${NGINX_VER}"
-readonly NGINX_MODULES_DIR="${NGINX_SOURCE_DIR}/modules"
-
 # Detect CPU architecture for optimal compilation
 detect_cpu_arch() {
     local cpu_model
@@ -132,44 +98,66 @@ detect_cpu_arch() {
     log INFO "Selected architecture flags: $ARCH_SPECIFIC"
 }
 
-# NGINX build options with Intel Xeon E3-1275 v6 specific optimizations
-readonly NGINX_OPTIONS="
-    --prefix=/etc/nginx
-    --sbin-path=/usr/sbin/nginx
-    --conf-path=/etc/nginx/nginx.conf
-    --error-log-path=/var/log/nginx/error.log
-    --http-log-path=/var/log/nginx/access.log
-    --pid-path=/run/nginx.pid
-    --lock-path=/run/nginx.lock
-    --http-client-body-temp-path=/var/cache/nginx/client_temp
-    --http-proxy-temp-path=/var/cache/nginx/proxy_temp
-    --http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp
-    --http-uwsgi-temp-path=/var/cache/nginx/fastcgi_temp
-    --http-scgi-temp-path=/var/cache/nginx/scgi_temp
-    --user=$NGINX_USER
-    --group=$NGINX_GROUP
-    --with-cc-opt='-O3 -march=skylake -mtune=skylake -msse4.1 -msse4.2 -mavx -mavx2 -maes -mpclmul -mrdrnd -mfsgsbase -fstack-protector-strong -flto=auto -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays -ffast-math -DTCP_FASTOPEN=23 -DNGX_HAVE_AES_NI=1 -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fPIC'
-    --with-ld-opt='-Wl,-z,relro -Wl,-z,now -Wl,--as-needed -Wl,-O2 -Wl,--sort-common -Wl,--gc-sections -Wl,--hash-style=gnu -Wl,--build-id=sha1 -flto=auto -pie'"
+# Configuration with validation
+readonly NGINX_STABLE_VER=${NGINX_STABLE_VER:-1.28.0}
+readonly NGINX_MAINLINE_VER=${NGINX_MAINLINE_VER:-1.29.1}
+readonly NGINX_VER=${NGINX_VER:-$NGINX_MAINLINE_VER}
+readonly NGINX_USER=${NGINX_USER:-nginx}
+readonly NGINX_GROUP=${NGINX_GROUP:-nginx}
+readonly BROTLI=${BROTLI:-y}
+readonly ZSTD=${ZSTD:-n}
+readonly CACHEPURGE=${CACHEPURGE:-y}
+readonly CLOUDFLARE_ZLIB=${CLOUDFLARE_ZLIB:-n}
+readonly BORING_SSL=${BORING_SSL:-n}
+readonly JEMALLOC=${JEMALLOC:-n}
+readonly PCRE_JIT=${PCRE_JIT:-n}
+readonly BUILD_THREADS=${BUILD_THREADS:-$(nproc)}
+
+# Validate version format
+if [[ ! $NGINX_VER =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    error_exit "Invalid NGINX version format: $NGINX_VER"
+fi
+
+log INFO "Building NGINX version: $NGINX_VER"
+log INFO "NGINX will run as user: $NGINX_USER, group: $NGINX_GROUP"
+
+# Enhanced options logging
+log INFO "Enhanced build options:"
+[[ $CLOUDFLARE_ZLIB == 'y' ]] && log INFO "  ✓ Cloudflare zlib (improved compression performance)"
+[[ $BORING_SSL == 'y' ]] && log INFO "  ✓ BoringSSL (Google's optimized SSL library)"
+[[ $JEMALLOC == 'y' ]] && log INFO "  ✓ jemalloc (improved memory management)"
+[[ $PCRE_JIT == 'y' ]] && log INFO "  ✓ PCRE JIT (faster regex processing)"
+
+# Validate user and group names
+if [[ ! $NGINX_USER =~ ^[a-zA-Z_][a-zA-Z0-9_-]{0,31}$ ]]; then
+    error_exit "Invalid NGINX user name: $NGINX_USER"
+fi
+
+if [[ ! $NGINX_GROUP =~ ^[a-zA-Z_][a-zA-Z0-9_-]{0,31}$ ]]; then
+    error_exit "Invalid NGINX group name: $NGINX_GROUP"
+fi
+
+# Define paths
+readonly NGINX_SOURCE_DIR="/usr/local/src/nginx"
+readonly NGINX_BUILD_DIR="${NGINX_SOURCE_DIR}/nginx-${NGINX_VER}"
+readonly NGINX_MODULES_DIR="${NGINX_SOURCE_DIR}/modules"
+
+# Initialize architecture-specific variable
+ARCH_SPECIFIC=""
+
+# Global variables for custom libraries
+CLOUDFLARE_ZLIB_PATH=""
+BORING_SSL_PATH=""
+JEMALLOC_PATH=""
 
 # Minimal high-performance NGINX modules (customized)
-NGINX_MODULES="--with-threads
+NGINX_MODULES=(
+    --with-threads
     --with-file-aio
     --with-http_ssl_module
     --with-http_v2_module
     --with-http_v3_module
-    --with-http_mp4_module
     --with-http_auth_request_module
-    --with-http_access_module
-    --with-http_auth_basic_module
-    --with-http_map_module
-    --with-http_referer_module
-    --with-http_rewrite_module
-    --with-http_proxy_module
-    --with-http_fastcgi_module
-    --with-http_charset_module
-    --with-http_gzip_module
-    --with-stream
-    --with-stream_ssl_module
     --without-http_ssi_module
     --without-http_userid_module
     --without-http_mirror_module
@@ -188,8 +176,92 @@ NGINX_MODULES="--with-threads
     --without-http_upstream_ip_hash_module
     --without-http_upstream_least_conn_module
     --without-http_upstream_random_module
-    --without-http_upstream_keepalive_module
-    --without-http_upstream_zone_module"
+    --without-http_upstream_zone_module
+)
+
+# Function to build NGINX options dynamically
+build_nginx_options() {
+    # Detect CPU architecture first
+    detect_cpu_arch
+    
+    # Base compiler optimization flags
+    local cc_opt="-O3 ${ARCH_SPECIFIC} -msse4.1 -msse4.2 -mavx -mavx2 -maes -mpclmul -mrdrnd -mfsgsbase"
+    cc_opt="${cc_opt} -fstack-protector-strong -flto=auto -fomit-frame-pointer -funroll-loops"
+    cc_opt="${cc_opt} -fprefetch-loop-arrays -ffast-math -DTCP_FASTOPEN=23 -DNGX_HAVE_AES_NI=1"
+    cc_opt="${cc_opt} -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fPIC"
+    
+    local ld_opt="-Wl,-z,relro -Wl,-z,now -Wl,--as-needed -Wl,-O2 -Wl,--sort-common"
+    ld_opt="${ld_opt} -Wl,--gc-sections -Wl,--hash-style=gnu -Wl,--build-id=sha1 -flto=auto -pie"
+    
+    # Add Cloudflare zlib paths if enabled
+    if [[ $CLOUDFLARE_ZLIB == 'y' && -n $CLOUDFLARE_ZLIB_PATH ]]; then
+        cc_opt="${cc_opt} -I${CLOUDFLARE_ZLIB_PATH}"
+        ld_opt="${ld_opt} -L${CLOUDFLARE_ZLIB_PATH}"
+    fi
+    
+    # Add BoringSSL paths if enabled
+    if [[ $BORING_SSL == 'y' && -n $BORING_SSL_PATH ]]; then
+        cc_opt="${cc_opt} -I${BORING_SSL_PATH}/include"
+        ld_opt="${ld_opt} -L${BORING_SSL_PATH}/build/ssl -L${BORING_SSL_PATH}/build/crypto"
+    fi
+    
+    # Add jemalloc paths if enabled
+    if [[ $JEMALLOC == 'y' && -n $JEMALLOC_PATH ]]; then
+        cc_opt="${cc_opt} -I${JEMALLOC_PATH}/include"
+        ld_opt="${ld_opt} -L${JEMALLOC_PATH}/lib -ljemalloc"
+    fi
+    
+    # Build NGINX options array
+    NGINX_OPTIONS=(
+        --prefix=/etc/nginx
+        --sbin-path=/usr/sbin/nginx
+        --conf-path=/etc/nginx/nginx.conf
+        --error-log-path=/var/log/nginx/error.log
+        --http-log-path=/var/log/nginx/access.log
+        --pid-path=/run/nginx.pid
+        --lock-path=/run/nginx.lock
+        --http-client-body-temp-path=/var/cache/nginx/client_temp
+        --http-proxy-temp-path=/var/cache/nginx/proxy_temp
+        --http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp
+        --http-uwsgi-temp-path=/var/cache/nginx/fastcgi_temp
+        --http-scgi-temp-path=/var/cache/nginx/scgi_temp
+        --user=$NGINX_USER
+        --group=$NGINX_GROUP
+        --with-cc-opt="$cc_opt"
+        --with-ld-opt="$ld_opt"
+    )
+    
+    # Add custom library paths
+    if [[ $CLOUDFLARE_ZLIB == 'y' && -n $CLOUDFLARE_ZLIB_PATH ]]; then
+        NGINX_OPTIONS+=(--with-zlib="$CLOUDFLARE_ZLIB_PATH")
+    fi
+    
+    if [[ $PCRE_JIT == 'y' ]]; then
+        NGINX_OPTIONS+=(--with-pcre-jit)
+    fi
+
+}
+
+# Backup existing nginx binary
+backup_existing_nginx() {
+    if command -v nginx >/dev/null 2>&1; then
+        local nginx_path
+        nginx_path=$(command -v nginx)
+        local backup_path="${nginx_path}.backup.$(date +%Y%m%d-%H%M%S)"
+        
+        read -p "Do you want to backup the current nginx binary? [Y/n]: " -r
+        if [[ $REPLY =~ ^[Nn]$ ]]; then
+            log INFO "Skipping nginx binary backup"
+        else
+            log INFO "Backing up current nginx binary..."
+            if cp "$nginx_path" "$backup_path"; then
+                log INFO "Nginx binary backed up to: $backup_path"
+            else
+                log WARN "Failed to backup nginx binary (continuing anyway)"
+            fi
+        fi
+    fi
+}
 
 # Check if nginx is already installed
 check_existing_nginx() {
@@ -202,35 +274,52 @@ check_existing_nginx() {
             log INFO "Installation cancelled by user"
             exit 0
         fi
+        backup_existing_nginx
     fi
 }
 
 # Install dependencies with error checking
 install_dependencies() {
-    log INFO "Installing build dependencies..."
-    
     local packages=(
         build-essential ca-certificates wget curl
-        libpcre2-dev autoconf unzip automake libtool tar git 
-        libssl-dev zlib1g-dev uuid-dev lsb-release 
-        cmake equivs pkg-config libzstd-dev
+        autoconf unzip automake libtool tar git 
+        uuid-dev lsb-release cmake equivs pkg-config
     )
-    
-    # Check OpenSSL version for HTTP/3 support
-    if ! check_openssl_version; then
-        log WARN "OpenSSL version may not fully support HTTP/3 QUIC. Consider upgrading."
+
+    # Standard dependencies
+    if [[ $CLOUDFLARE_ZLIB != 'y' ]]; then
+        packages+=(zlib1g-dev)
     fi
     
-    apt-get update -qq || error_exit "Failed to update package lists"
+    if [[ $BORING_SSL != 'y' ]]; then
+        packages+=(libssl-dev)
+    else
+        packages+=(golang-go)  # Required for BoringSSL
+    fi
     
+    if [[ $PCRE_JIT != 'y' ]]; then
+        packages+=(libpcre2-dev)
+    else
+        packages+=(libpcre3-dev)  # PCRE JIT requires PCRE1
+    fi
+    
+    if [[ $ZSTD == 'y' ]]; then
+        packages+=(libzstd-dev)
+    fi
+    
+    # Check OpenSSL version for HTTP/3 support (only if not using BoringSSL)
+    if [[ $BORING_SSL != 'y' ]]; then
+        check_openssl_version || log WARN "OpenSSL version may not fully support HTTP/3 QUIC. Consider upgrading."
+    fi
+
+    apt-get update -qq || error_exit "Failed to update package lists"
+
     for package in "${packages[@]}"; do
         if ! dpkg -l | grep -q "^ii  $package "; then
             log INFO "Installing $package..."
             apt-get install -y "$package" || error_exit "Failed to install $package"
         fi
     done
-    
-    log INFO "Dependencies installed successfully"
 }
 
 # Check OpenSSL version for HTTP/3 compatibility
@@ -250,10 +339,113 @@ check_openssl_version() {
     fi
 }
 
+# Build Cloudflare zlib
+build_cloudflare_zlib() {
+    if [[ $CLOUDFLARE_ZLIB != 'y' ]]; then
+        return 0
+    fi
+    
+    log INFO "Building Cloudflare zlib..."
+    
+    cd "$NGINX_SOURCE_DIR" || error_exit "Cannot access source directory"
+    
+    if ! git clone --depth=1 https://github.com/cloudflare/zlib cloudflare-zlib; then
+        error_exit "Failed to clone Cloudflare zlib repository"
+    fi
+    
+    cd cloudflare-zlib || error_exit "Cannot access Cloudflare zlib directory"
+    
+    # Configure and build
+    if ! ./configure --static; then
+        error_exit "Cloudflare zlib configuration failed"
+    fi
+    
+    if ! make -j "$BUILD_THREADS"; then
+        error_exit "Cloudflare zlib build failed"
+    fi
+    
+    CLOUDFLARE_ZLIB_PATH="$PWD"
+    log INFO "Cloudflare zlib built successfully at: $CLOUDFLARE_ZLIB_PATH"
+}
+
+# Build BoringSSL
+build_boring_ssl() {
+    if [[ $BORING_SSL != 'y' ]]; then
+        return 0
+    fi
+    
+    log INFO "Building BoringSSL..."
+    
+    cd "$NGINX_SOURCE_DIR" || error_exit "Cannot access source directory"
+    
+    if ! git clone --depth=1 https://github.com/google/boringssl; then
+        error_exit "Failed to clone BoringSSL repository"
+    fi
+    
+    cd boringssl || error_exit "Cannot access BoringSSL directory"
+    
+    mkdir -p build && cd build || error_exit "Cannot create build directory"
+    
+    # Configure and build
+    if ! cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..; then
+        error_exit "BoringSSL configuration failed"
+    fi
+    
+    if ! make -j "$BUILD_THREADS"; then
+        error_exit "BoringSSL build failed"
+    fi
+    
+    # Create compatibility structure
+    cd ..
+    mkdir -p .openssl/lib .openssl/include || error_exit "Cannot create BoringSSL structure"
+    cp -R include/* .openssl/include/ || error_exit "Cannot copy BoringSSL headers"
+    cp build/crypto/libcrypto.a .openssl/lib/ || error_exit "Cannot copy libcrypto"
+    cp build/ssl/libssl.a .openssl/lib/ || error_exit "Cannot copy libssl"
+    
+    BORING_SSL_PATH="$PWD"
+    log INFO "BoringSSL built successfully at: $BORING_SSL_PATH"
+}
+
+# Build jemalloc
+build_jemalloc() {
+    if [[ $JEMALLOC != 'y' ]]; then
+        return 0
+    fi
+    
+    log INFO "Building jemalloc..."
+    
+    cd "$NGINX_SOURCE_DIR" || error_exit "Cannot access source directory"
+    
+    local jemalloc_version="5.3.0"
+    if ! wget -q --timeout=30 --tries=3 "https://github.com/jemalloc/jemalloc/releases/download/${jemalloc_version}/jemalloc-${jemalloc_version}.tar.bz2"; then
+        error_exit "Failed to download jemalloc source"
+    fi
+    
+    tar -xjf "jemalloc-${jemalloc_version}.tar.bz2" || error_exit "Failed to extract jemalloc"
+    cd "jemalloc-${jemalloc_version}" || error_exit "Cannot access jemalloc directory"
+    
+    # Configure and build
+    if ! ./configure --prefix="$PWD/install" --enable-static --disable-shared; then
+        error_exit "jemalloc configuration failed"
+    fi
+    
+    if ! make -j "$BUILD_THREADS"; then
+        error_exit "jemalloc build failed"
+    fi
+    
+    if ! make install; then
+        error_exit "jemalloc install failed"
+    fi
+    
+    JEMALLOC_PATH="$PWD/install"
+    log INFO "jemalloc built successfully at: $JEMALLOC_PATH"
+}
+
 # Download and verify NGINX source
 download_nginx_source() {
     log INFO "Downloading NGINX source code..."
     
+    mkdir -p "$NGINX_SOURCE_DIR"
     cd "$NGINX_SOURCE_DIR" || error_exit "Cannot change to source directory"
     
     # Download with better error handling
@@ -297,7 +489,7 @@ build_zstd_module() {
     zstd_version=$(pkg-config --modversion libzstd)
     log INFO "Found libzstd version: $zstd_version"
     
-    NGINX_MODULES+=" --add-module=$NGINX_MODULES_DIR/zstd-nginx-module"
+    NGINX_MODULES+=( --add-module="$NGINX_MODULES_DIR/zstd-nginx-module" )
     log INFO "Zstd module prepared successfully"
 }
 
@@ -327,7 +519,7 @@ build_brotli_module() {
     
     make -j "$BUILD_THREADS" || error_exit "Brotli build failed"
     
-    NGINX_MODULES+=" --add-module=$NGINX_MODULES_DIR/ngx_brotli"
+    NGINX_MODULES+=( --add-module="$NGINX_MODULES_DIR/ngx_brotli" )
     log INFO "Brotli module built successfully"
 }
 
@@ -345,7 +537,7 @@ build_cache_purge_module() {
         error_exit "Failed to clone Cache Purge repository"
     fi
     
-    NGINX_MODULES+=" --add-module=$NGINX_MODULES_DIR/ngx_cache_purge"
+    NGINX_MODULES+=( --add-module="$NGINX_MODULES_DIR/ngx_cache_purge" )
     log INFO "Cache Purge module prepared"
 }
 
@@ -435,152 +627,6 @@ setup_directories() {
     log INFO "Directory structure created"
 }
 
-# Download default configuration
-download_default_config() {
-    if [[ ! -e /etc/nginx/nginx.conf ]]; then
-        log INFO "Downloading default nginx.conf..."
-        cd /etc/nginx || error_exit "Cannot access nginx config directory"
-        
-        # Use a more reliable source or embed the config
-        if ! wget -q --timeout=10 "https://raw.githubusercontent.com/nginx/nginx/master/conf/nginx.conf"; then
-            log WARN "Failed to download default config, creating optimized one..."
-            cat > nginx.conf << EOF
-# High-performance NGINX configuration
-user $NGINX_USER;
-worker_processes auto;
-worker_rlimit_nofile 65535;
-error_log /var/log/nginx/error.log crit;
-pid /run/nginx.pid;
-
-events {
-    worker_connections 4096;
-    use epoll;
-    multi_accept on;
-}
-
-http {
-    # Basic Settings
-    sendfile on;
-    tcp_nopush on;
-    tcp_nodelay on;
-    keepalive_timeout 30;
-    keepalive_requests 1000;
-    reset_timedout_connection on;
-    client_body_timeout 10;
-    send_timeout 2;
-    client_header_timeout 10;
-    client_max_body_size 16m;
-    client_body_buffer_size 128k;
-    client_header_buffer_size 3m;
-    large_client_header_buffers 4 256k;
-    server_tokens off;
-    
-    # MIME Types
-    include /etc/nginx/mime.types;
-    default_type application/octet-stream;
-
-    # Gzip Compression (enabled with your modules)
-    gzip on;
-    gzip_vary on;
-    gzip_proxied any;
-    gzip_comp_level 6;
-    gzip_types
-        text/plain
-        text/css
-        text/xml
-        text/javascript
-        application/json
-        application/javascript
-        application/xml+rss
-        application/atom+xml
-        image/svg+xml;
-
-    # Zstd Compression (higher compression ratio than gzip)
-    zstd on;
-    zstd_comp_level 6;
-    zstd_min_length 1000;
-    zstd_types
-        text/plain
-        text/css
-        text/xml
-        text/javascript
-        application/json
-        application/javascript
-        application/xml+rss
-        application/atom+xml
-        image/svg+xml
-        application/wasm;
-
-    # Brotli Compression (best compression for modern browsers)
-    brotli on;
-    brotli_comp_level 6;
-    brotli_min_length 1000;
-    brotli_types
-        text/plain
-        text/css
-        text/xml
-        text/javascript
-        application/json
-        application/javascript
-        application/xml+rss
-        application/atom+xml
-        image/svg+xml
-        application/wasm;
-
-    # Charset handling
-    charset_types
-        text/css
-        text/plain
-        text/vnd.wap.wml
-        text/javascript
-        text/xml
-        application/json
-        application/rss+xml
-        application/atom+xml;
-
-    # Logging (minimal for performance)
-    log_format minimal '\$remote_addr - \$status [\$time_local] "\$request" \$body_bytes_sent "\$http_user_agent"';
-    access_log /var/log/nginx/access.log minimal buffer=64k flush=5m;
-
-    # SSL/TLS Optimization
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
-    ssl_prefer_server_ciphers off;
-    ssl_session_cache shared:SSL:10m;
-    ssl_session_timeout 1d;
-    ssl_session_tickets off;
-    ssl_stapling on;
-    ssl_stapling_verify on;
-    
-    # HTTP/3 and QUIC settings
-    http3 on;
-    http3_max_concurrent_streams 128;
-    quic_retry on;
-    
-    # Map for common use cases
-    map \$http_upgrade \$connection_upgrade {
-        default upgrade;
-        '' close;
-    }
-    
-    # Security Headers
-    add_header X-Frame-Options DENY always;
-    add_header X-Content-Type-Options nosniff always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-    
-    # Alt-Svc header for HTTP/3 advertising
-    add_header Alt-Svc 'h3=":443"; ma=86400' always;
-
-    include /etc/nginx/conf.d/*.conf;
-    include /etc/nginx/sites-enabled/*;
-}
-EOF
-        fi
-        log INFO "Default configuration installed"
-    fi
-}
-
 # Compile NGINX
 compile_nginx() {
     log INFO "Compiling NGINX..."
@@ -589,7 +635,10 @@ compile_nginx() {
     
     # Configure with better error handling
     log DEBUG "Running configure with options..."
-    if ! ./configure $NGINX_OPTIONS $NGINX_MODULES; then
+    log DEBUG "Options: ${NGINX_OPTIONS[*]}"
+    log DEBUG "Modules: ${NGINX_MODULES[*]}"
+    
+    if ! ./configure "${NGINX_OPTIONS[@]}" "${NGINX_MODULES[@]}"; then
         error_exit "NGINX configuration failed"
     fi
     
@@ -648,156 +697,6 @@ EOF
     fi
 }
 
-# Create optimized default site
-create_default_site() {
-    if [[ ! -f /etc/nginx/sites-available/default ]]; then
-        log INFO "Creating optimized default site configuration..."
-        
-        cat > /etc/nginx/sites-available/default << 'EOF'
-server {
-    listen 80 default_server;
-    listen [::]:80 default_server;
-    
-    # HTTP/3 and HTTP/2 with SSL
-    listen 443 ssl http2 default_server;
-    listen [::]:443 ssl http2 default_server;
-    listen 443 quic default_server reuseport;
-    listen [::]:443 quic default_server reuseport;
-    
-    server_name _;
-    root /var/www/html;
-    index index.html index.htm index.php;
-    
-    # SSL Configuration (replace with your certificates)
-    ssl_certificate /etc/nginx/ssl/nginx-selfsigned.crt;
-    ssl_certificate_key /etc/nginx/ssl/nginx-selfsigned.key;
-    
-    # HTTP/3 Alt-Svc header
-    add_header Alt-Svc 'h3=":443"; ma=86400';
-    
-    # Security headers
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    
-    # Multi-layer compression (browsers choose best supported)
-    gzip on;
-    gzip_vary on;
-    gzip_comp_level 6;
-    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
-    
-    # Zstd compression (modern browsers, better than gzip)
-    zstd on;
-    zstd_comp_level 6;
-    zstd_min_length 1000;
-    zstd_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript application/wasm;
-    
-    # Brotli compression (best compression ratio)
-    brotli on;
-    brotli_comp_level 6;
-    brotli_min_length 1000;
-    brotli_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript application/wasm;
-    
-    # Performance optimizations
-    location ~* \.(jpg|jpeg|png|gif|ico|css|js|woff|woff2)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-        access_log off;
-        gzip_static on;
-    }
-    
-    # MP4 streaming support
-    location ~* \.mp4$ {
-        mp4;
-        mp4_buffer_size 1m;
-        mp4_max_buffer_size 5m;
-        add_header Cache-Control "public, max-age=31536000";
-    }
-    
-    # FastCGI PHP processing (if needed)
-    location ~ \.php$ {
-        include fastcgi_params;
-        fastcgi_pass unix:/var/run/php/php-fpm.sock; # Adjust path as needed
-        fastcgi_index index.php;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        fastcgi_buffer_size 128k;
-        fastcgi_buffers 4 256k;
-        fastcgi_busy_buffers_size 256k;
-    }
-    
-    # Basic auth example (uncomment if needed)
-    # location /admin {
-    #     auth_basic "Admin Area";
-    #     auth_basic_user_file /etc/nginx/.htpasswd;
-    #     try_files $uri $uri/ =404;
-    # }
-    
-    # Proxy example (uncomment if needed)
-    # location /api/ {
-    #     proxy_pass http://backend;
-    #     proxy_set_header Host $host;
-    #     proxy_set_header X-Real-IP $remote_addr;
-    #     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    #     proxy_set_header X-Forwarded-Proto $scheme;
-    #     proxy_cache_bypass $http_upgrade;
-    # }
-    
-    location / {
-        try_files $uri $uri/ =404;
-    }
-}
-EOF
-        
-        # Enable the site
-        ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
-        
-        # Create SSL directory and self-signed certificate for testing
-        mkdir -p /etc/nginx/ssl
-        mkdir -p /var/www/html
-        
-        if [[ ! -f /etc/nginx/ssl/nginx-selfsigned.crt ]]; then
-            log INFO "Creating self-signed SSL certificate for testing..."
-            openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-                -keyout /etc/nginx/ssl/nginx-selfsigned.key \
-                -out /etc/nginx/ssl/nginx-selfsigned.crt \
-                -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost" \
-                >/dev/null 2>&1
-        fi
-        
-        # Create simple index page
-        if [[ ! -f /var/www/html/index.html ]]; then
-            cat > /var/www/html/index.html << 'EOF'
-<!DOCTYPE html>
-<html>
-<head>
-    <title>NGINX HTTP/3 Ready</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .protocol { color: #0066cc; font-weight: bold; }
-    </style>
-</head>
-<body>
-    <h1>Welcome to NGINX</h1>
-    <p>Your high-performance NGINX server is running with HTTP/3 and QUIC support!</p>
-    <p>Protocol: <span class="protocol" id="protocol">Loading...</span></p>
-    
-    <script>
-        // Detect HTTP version
-        if (window.chrome && chrome.loadTimes) {
-            document.getElementById('protocol').textContent = 'HTTP/2 or HTTP/3';
-        } else {
-            document.getElementById('protocol').textContent = 'HTTP/1.1';
-        }
-    </script>
-</body>
-</html>
-EOF
-        fi
-        
-        chown -R "$NGINX_USER:$NGINX_GROUP" /var/www/html
-        log INFO "Default site configuration created"
-    fi
-}
 setup_logrotate(){
     if [[ ! -f /etc/logrotate.d/nginx ]]; then
         log INFO "Setting up log rotation..."
@@ -895,61 +794,6 @@ verify_installation() {
     log INFO "NGINX installation verified successfully"
 }
 
-# Optimize system for NGINX performance
-optimize_system() {
-    if [[ $PERFORMANCE_OPTIMIZED != 'y' ]]; then
-        return 0
-    fi
-    
-    log INFO "Applying system optimizations for NGINX performance..."
-    
-    # Create performance tuning configuration
-    cat > /etc/sysctl.d/99-nginx-performance.conf << 'EOF'
-# Network optimizations for NGINX
-net.core.somaxconn = 65535
-net.core.netdev_max_backlog = 5000
-net.core.rmem_default = 262144
-net.core.rmem_max = 16777216
-net.core.wmem_default = 262144
-net.core.wmem_max = 16777216
-net.ipv4.tcp_rmem = 4096 65536 16777216
-net.ipv4.tcp_wmem = 4096 65536 16777216
-net.ipv4.tcp_max_syn_backlog = 8192
-net.ipv4.tcp_slow_start_after_idle = 0
-net.ipv4.tcp_tw_reuse = 1
-net.ipv4.tcp_fin_timeout = 15
-net.ipv4.tcp_keepalive_time = 300
-net.ipv4.tcp_keepalive_probes = 5
-net.ipv4.tcp_keepalive_intvl = 15
-net.ipv4.tcp_max_tw_buckets = 400000
-net.ipv4.tcp_fastopen = 3
-net.ipv4.tcp_congestion_control = bbr
-
-# File descriptor limits
-fs.file-max = 2097152
-fs.nr_open = 2097152
-
-# Memory management
-vm.swappiness = 10
-vm.dirty_ratio = 15
-vm.dirty_background_ratio = 5
-EOF
-    
-    # Apply sysctl settings
-    sysctl -p /etc/sysctl.d/99-nginx-performance.conf >/dev/null 2>&1 || log WARN "Some sysctl settings may require reboot"
-    
-    # Set ulimits for nginx user
-    cat >> /etc/security/limits.conf << EOF
-
-# NGINX performance limits
-$NGINX_USER soft nofile 65535
-$NGINX_USER hard nofile 65535
-$NGINX_USER soft nproc 32768
-$NGINX_USER hard nproc 32768
-EOF
-    
-    log INFO "System optimizations applied"
-}
 show_final_info(){
     local nginx_version
     nginx_version=$(/usr/sbin/nginx -v 2>&1 | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+')
@@ -965,24 +809,42 @@ show_final_info(){
     log INFO "Logs: /var/log/nginx/"
     log INFO "Service: systemctl {start|stop|restart|status} nginx"
     log INFO ""
+    log INFO "Build Configuration:"
+    [[ $ARCH_SPECIFIC != "" ]] && log INFO "  ✓ CPU Architecture: ${ARCH_SPECIFIC}"
+    [[ $CLOUDFLARE_ZLIB == 'y' ]] && log INFO "  ✓ Cloudflare zlib (enhanced compression)"
+    [[ $BORING_SSL == 'y' ]] && log INFO "  ✓ BoringSSL (Google's optimized SSL library)"
+    [[ $JEMALLOC == 'y' ]] && log INFO "  ✓ jemalloc (improved memory management)"
+    [[ $PCRE_JIT == 'y' ]] && log INFO "  ✓ PCRE JIT (faster regex processing)"
+    log INFO ""
     log INFO "Compression Support:"
     log INFO "  ✓ Gzip (universal browser support)"
-    log INFO "  ✓ Brotli (20-25% better than gzip)"
-    log INFO "  ✓ Zstd (15-20% better than gzip, faster)"
+    [[ $BROTLI == 'y' ]] && log INFO "  ✓ Brotli (20-25% better than gzip)"
+    [[ $ZSTD == 'y' ]] && log INFO "  ✓ Zstd (15-20% better than gzip, faster)"
     log INFO "  ✓ Multi-layer negotiation (best available used)"
     log INFO "HTTP/3 Features:"
     log INFO "  ✓ QUIC Protocol Support"
     log INFO "  ✓ HTTP/3 Module Enabled"
-    log INFO "  ✓ System OpenSSL Integration"
+    if [[ $BORING_SSL == 'y' ]]; then
+        log INFO "  ✓ BoringSSL Integration (optimized QUIC)"
+    else
+        log INFO "  ✓ System OpenSSL Integration"
+    fi
     log INFO "  ✓ Alt-Svc Header for Protocol Negotiation"
     log INFO ""
     log INFO "Performance Optimizations:"
     log INFO "  ✓ Custom Module Set (Production Ready)"
-    log INFO "  ✓ Aggressive Compiler Optimizations (-O3, -march=skylake)"
+    log INFO "  ✓ Aggressive Compiler Optimizations (-O3, ${ARCH_SPECIFIC})"
+    if [[ $JEMALLOC == 'y' ]]; then
+        log INFO "  ✓ jemalloc Memory Allocator"
+    fi
+    if [[ $PCRE_JIT == 'y' ]]; then
+        log INFO "  ✓ PCRE Just-In-Time Compilation"
+    fi
+    if [[ $CLOUDFLARE_ZLIB == 'y' ]]; then
+        log INFO "  ✓ Cloudflare zlib (faster compression)"
+    fi
     log INFO "  ✓ System-Level Network Tuning"
     log INFO "  ✓ Optimized Worker Configuration"
-    log INFO "  ✓ Multi-layer Compression (Gzip + Brotli + Zstd)"
-    log INFO "  ✓ MP4 Streaming Support"
     log INFO "  ✓ FastCGI PHP Support"
     log INFO ""
     log INFO "Test URLs:"
@@ -992,6 +854,21 @@ show_final_info(){
     log INFO ""
     log INFO "To verify HTTP/3 support:"
     log INFO "  curl --http3 -k https://localhost/"
+    log INFO ""
+    log INFO "Enhanced Features Summary:"
+    log INFO "  • Architecture-optimized compilation (${ARCH_SPECIFIC})"
+    if [[ $CLOUDFLARE_ZLIB == 'y' ]]; then
+        log INFO "  • Cloudflare zlib for improved compression performance"
+    fi
+    if [[ $BORING_SSL == 'y' ]]; then
+        log INFO "  • BoringSSL for optimized cryptographic operations"
+    fi
+    if [[ $JEMALLOC == 'y' ]]; then
+        log INFO "  • jemalloc for reduced memory fragmentation"
+    fi
+    if [[ $PCRE_JIT == 'y' ]]; then
+        log INFO "  • PCRE JIT for faster regex pattern matching"
+    fi
     log INFO "============================================="
     
     # Show status
@@ -1000,11 +877,10 @@ show_final_info(){
 
 # Main execution
 main() {
-    log INFO "Starting NGINX autoinstall script..."
+    log INFO "Starting enhanced NGINX autoinstall script..."
     
     detect_os
     check_existing_nginx
-    detect_cpu_arch
     
     # Cleanup and prepare
     rm -rf "$NGINX_SOURCE_DIR" 2>/dev/null || true
@@ -1013,26 +889,32 @@ main() {
     install_dependencies
     create_nginx_user
     setup_directories
-    download_default_config
     
-	build_cache_purge_module
+    # Build custom libraries first
+    build_cloudflare_zlib
+    build_boring_ssl
+    build_jemalloc
+    
+    # Build NGINX modules
+    build_cache_purge_module
     build_brotli_module
-	build_zstd_module
+    build_zstd_module
+
+    # Build NGINX options after detecting CPU architecture
+    build_nginx_options
     
     download_nginx_source
     compile_nginx
     
     setup_systemd_service
     setup_logrotate
-    create_default_site
-    optimize_system
     block_apt_nginx
     create_equivs_package
     
     verify_installation
     show_final_info
     
-    log INFO "Installation completed successfully!"
+    log INFO "Enhanced installation completed successfully!"
 }
 
 # Run main function
