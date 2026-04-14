@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # =============================================================================
-# NGINX HIGH PERFORMANCE AUTO INSTALLER v1.0.3
+# NGINX HIGH PERFORMANCE AUTO INSTALLER v1.1.0
 # =============================================================================
 #
 # DESCRIPTION:
@@ -82,8 +82,8 @@ LOCK_PATH="/run/nginx/nginx.lock"
 
 # Build Environment
 BUILD_ROOT="/tmp/nginx-hpc-build"
-USER="nginx"
-GROUP="nginx"
+NGINX_USER="nginx"
+NGINX_GROUP="nginx"
 
 # --- VISUALS ---
 R='\033[0;31m'
@@ -308,8 +308,8 @@ LD_FLAGS="-Wl,-z,relro -Wl,-z,now -ljemalloc $LINKER_FLAG -flto"
     --http-fastcgi-temp-path=$CACHE_PATH/fastcgi \
     --http-uwsgi-temp-path=$CACHE_PATH/uwsgi \
     --http-scgi-temp-path=$CACHE_PATH/scgi \
-    --user=$USER \
-    --group=$GROUP \
+    --user=$NGINX_USER \
+    --group=$NGINX_GROUP \
     $ENABLE_MODULES \
     --add-module=../ngx_brotli \
     --add-module=../zstd-nginx-module \
@@ -365,11 +365,11 @@ cp -rn "$BUILD_ROOT/install_temp/etc"/* /etc/ 2>/dev/null || true
 cp -rn "$BUILD_ROOT/install_temp/usr/share" /usr/ 2>/dev/null || true
 
 # 6. SYSTEM CONFIG
-if ! id "$USER" &>/dev/null; then 
-    useradd --no-create-home --shell /bin/false --system --user-group "$USER"
+if ! id "$NGINX_USER" &>/dev/null; then 
+    useradd --no-create-home --shell /bin/false --system --user-group "$NGINX_USER"
 fi
 mkdir -p $LOG_PATH $CACHE_PATH
-chown -R $USER:$GROUP $LOG_PATH $CACHE_PATH
+chown -R $NGINX_USER:$NGINX_GROUP $LOG_PATH $CACHE_PATH
 
 info "Updating Systemd Unit..."
 cat > /lib/systemd/system/nginx.service <<EOF
@@ -409,7 +409,7 @@ $LOG_PATH/*.log {
     compress
     delaycompress
     notifempty
-    create 0640 $USER root
+    create 0640 $NGINX_USER root
     sharedscripts
     postrotate
         if [ -f $PID_PATH ]; then
